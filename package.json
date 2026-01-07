@@ -1,0 +1,16 @@
+
+{
+  "name": "tank-battle-game",
+  "version": "1.0.0",
+  "description": "2D Real-time Multiplayer Tank Game using Node.js and Socket.io",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "Team Suno Shizune",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2"
+  }
+}
