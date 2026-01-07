@@ -1,0 +1,767 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Advanced Tank Battle Arena</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+      color: #fff;
+      font-family: 'Arial', sans-serif;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .header {
+      background: rgba(0, 0, 0, 0.9);
+      padding: 15px 30px;
+      border-bottom: 2px solid #00ff88;
+      box-shadow: 0 2px 20px rgba(0, 255, 136, 0.3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .game-title {
+      font-size: 24px;
+      font-weight: bold;
+      background: linear-gradient(45deg, #00ff88, #00ccff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+    }
+
+    .game-info {
+      display: flex;
+      gap: 30px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 80px;
+    }
+
+    .info-value {
+      font-size: 20px;
+      color: #00ff88;
+      font-weight: bold;
+    }
+
+    .controls {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      padding: 20px 30px;
+      border-radius: 20px;
+      border: 2px solid #444;
+      backdrop-filter: blur(15px);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      font-size: 14px;
+    }
+
+    .minimap {
+      position: absolute;
+      top: 80px;
+      right: 30px;
+      width: 150px;
+      height: 150px;
+      background: rgba(0, 0, 0, 0.8);
+      border: 2px solid #00ff88;
+      border-radius: 10px;
+      padding: 10px;
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    }
+
+    .minimap-label {
+      font-size: 12px;
+      color: #00ff88;
+      margin-bottom: 5px;
+      text-align: center;
+    }
+
+    .leaderboard {
+      position: absolute;
+      top: 80px;
+      left: 30px;
+      width: 250px;
+      background: rgba(0, 0, 0, 0.9);
+      border: 2px solid #ff4444;
+      border-radius: 15px;
+      padding: 15px;
+      box-shadow: 0 10px 30px rgba(255, 68, 68, 0.2);
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .leaderboard-title {
+      font-size: 16px;
+      color: #ff4444;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .player-entry {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #333;
+      font-size: 14px;
+    }
+
+    .player-name {
+      color: #fff;
+    }
+
+    .player-score {
+      color: #ffaa00;
+      font-weight: bold;
+    }
+
+    #game {
+      flex: 1;
+      background: radial-gradient(circle at center, #1a1a2e 0%, #0f0f23 70%, #000 100%);
+      display: block;
+      margin: 0 auto;
+      border: 3px solid #00ff88;
+      border-radius: 10px;
+      box-shadow: 0 0 50px rgba(0, 255, 136, 0.4);
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    .crosshair {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      pointer-events: none;
+      transition: all 0.1s ease;
+    }
+
+    .crosshair::before,
+    .crosshair::after {
+      content: '';
+      position: absolute;
+      background: rgba(0, 255, 136, 0.8);
+      width: 2px;
+      height: 15px;
+      left: 14px;
+    }
+
+    .crosshair::before {
+      top: 0;
+    }
+
+    .crosshair::after {
+      bottom: 0;
+    }
+
+    .crosshair span {
+      position: absolute;
+      background: rgba(0, 255, 136, 0.8);
+      height: 2px;
+      width: 15px;
+      left: 0;
+      top: 14px;
+    }
+
+    .crosshair span:last-child {
+      left: 15px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.7; }
+      50% { opacity: 1; }
+    }
+
+    .pulse {
+      animation: pulse 1.5s infinite;
+    }
+
+    .hit-effect {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      pointer-events: none;
+      opacity: 0;
+      background: radial-gradient(circle, rgba(255,50,50,0.7) 0%, transparent 70%);
+      border-radius: 50%;
+      z-index: 100;
+    }
+
+    .health-bar-container {
+      position: absolute;
+      top: 10px;
+      right: 200px;
+      width: 200px;
+      height: 20px;
+      background: rgba(0,0,0,0.7);
+      border: 1px solid #333;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .health-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00);
+      border-radius: 10px;
+      transition: width 0.3s ease;
+    }
+    
+    .cooldown-indicator {
+      position: absolute;
+      bottom: 80px;
+      right: 30px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 10px 15px;
+      border-radius: 10px;
+      border: 1px solid #00ccff;
+      font-size: 12px;
+      color: #00ccff;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <div class="header">
+      <div class="game-title">⚡ TANK BATTLE ARENA ⚡</div>
+      <div class="game-info">
+        <div class="info-item">
+          <span class="info-value" id="playersCount">0</span>
+          <span>Players</span>
+        </div>
+        <div class="info-item">
+          <span class="info-value" id="bulletsCount">0</span>
+          <span>Bullets</span>
+        </div>
+        <div class="info-item">
+          <span class="info-value" id="fps">60</span>
+          <span>FPS</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="health-bar-container">
+      <div id="healthBar" class="health-bar" style="width: 100%"></div>
+    </div>
+
+    <canvas id="game" width="1200" height="700"></canvas>
+
+    <div class="leaderboard" id="leaderboard">
+      <div class="leaderboard-title">🏆 TOP PLAYERS</div>
+    </div>
+
+    <div class="minimap" id="minimap">
+      <div class="minimap-label">MINIMAP</div>
+      <canvas id="minimapCanvas" width="130" height="130"></canvas>
+    </div>
+
+    <div class="cooldown-indicator" id="cooldownIndicator" style="display: none;">
+      Repair Cooldown: <span id="repairTimer">5</span>s
+    </div>
+
+    <div class="controls">
+      <strong>🎮 CONTROLS</strong><br>
+      <span style="color: #00ff88;">WASD</span> Move | <span style="color: #ff4444;">CLICK</span> Shoot<br>
+      <span style="color: #ffaa00;">SPACE</span> Boost | <span style="color: #00ccff;">R</span> Repair (5s CD)
+    </div>
+
+    <div class="crosshair pulse" id="crosshair"></div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const minimapCanvas = document.getElementById("minimapCanvas");
+    const minimapCtx = minimapCanvas.getContext("2d");
+    const healthBar = document.getElementById("healthBar");
+    const cooldownIndicator = document.getElementById("cooldownIndicator");
+    const repairTimer = document.getElementById("repairTimer");
+    
+    // Game constants
+    const ARENA_WIDTH = 1200;
+    const ARENA_HEIGHT = 700;
+    const TANK_WIDTH = 30;
+    const TANK_HEIGHT = 20;
+    const TANK_RADIUS = 15;
+    const BULLET_DAMAGE = 20;
+    const BULLET_SPEED = 10;
+    const MAX_HEALTH = 100;
+    
+    // Target FPS (set to desired value; higher than monitor refresh won't display more frames)
+    const TARGET_FPS = 120; // try 120; set to 60, 144, etc. depending on hardware
+    const FRAME_INTERVAL = 1000 / TARGET_FPS;
+
+    // Responsive canvas
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      // keep canvas drawing buffer resolution reasonable
+      canvas.width = rect.width || canvas.width;
+      canvas.height = rect.height || canvas.height;
+      minimapCanvas.width = 130;
+      minimapCanvas.height = 130;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    let players = {};
+    let bullets = [];
+    let myPlayerId = null;
+    let angle = 0;
+    const keys = {};
+    let lastTime = performance.now();
+    let fps = 0;
+    let frameCount = 0;
+    let canShoot = true;
+    let canRepair = true;
+    let repairCooldown = 5000; // 5 seconds
+    let repairCooldownTimer = null;
+
+    // Crosshair positioning
+    const crosshair = document.getElementById("crosshair");
+    canvas.addEventListener("mousemove", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      crosshair.style.left = (e.clientX - rect.left - 15) + "px";
+      crosshair.style.top = (e.clientY - rect.top - 15) + "px";
+    });
+
+    // Input handlers
+    document.addEventListener("keydown", e => {
+      keys[e.code.toLowerCase()] = true;
+      if (e.code === "Space") e.preventDefault();
+      if (e.code === "KeyR" && myPlayerId && canRepair) {
+        socket.emit("repair");
+        startRepairCooldown();
+      }
+    });
+    
+    document.addEventListener("keyup", e => keys[e.code.toLowerCase()] = false);
+    
+    canvas.addEventListener("click", () => {
+      if (canShoot && myPlayerId && players[myPlayerId]) {
+        socket.emit("shoot");
+        canShoot = false;
+        setTimeout(() => { canShoot = true; }, 300);
+      }
+    });
+
+    // Repair cooldown function
+    function startRepairCooldown() {
+      canRepair = false;
+      cooldownIndicator.style.display = 'block';
+      let timeLeft = 5;
+      
+      repairCooldownTimer = setInterval(() => {
+        timeLeft--;
+        repairTimer.textContent = timeLeft;
+        
+        if (timeLeft <= 0) {
+          clearInterval(repairCooldownTimer);
+          canRepair = true;
+          cooldownIndicator.style.display = 'none';
+        }
+      }, 1000);
+    }
+
+    // Socket events
+    socket.on("connect", () => {
+      console.log("Connected:", socket.id);
+    });
+
+    socket.on("init", (data) => {
+      myPlayerId = data.myPlayerId;
+      console.log("Game initialized, my ID:", myPlayerId);
+    });
+
+    socket.on("state", (data) => {
+      players = data.players;
+      bullets = data.bullets;
+      
+      // Update UI
+      document.getElementById("playersCount").textContent = Object.keys(players).length;
+      document.getElementById("bulletsCount").textContent = bullets.length;
+      
+      // Update health bar
+      if (myPlayerId && players[myPlayerId]) {
+        const player = players[myPlayerId];
+        const hp = player.hp || 100;
+        healthBar.style.width = `${hp}%`;
+        
+        // Update health bar color based on HP
+        if (hp > 70) {
+          healthBar.style.background = "linear-gradient(90deg, #00ff00, #00aa00)";
+        } else if (hp > 40) {
+          healthBar.style.background = "linear-gradient(90deg, #ffff00, #aa5500)";
+        } else {
+          healthBar.style.background = "linear-gradient(90deg, #ff0000, #aa0000)";
+        }
+      }
+     
+      updateLeaderboard();
+    });
+
+    socket.on("playerJoined", (player) => {
+      players[player.id] = player;
+      document.getElementById("playersCount").textContent = Object.keys(players).length;
+    });
+
+    socket.on("hit", (data) => {
+      if (data.playerId === myPlayerId) {
+        // Create hit effect
+        const effect = document.createElement('div');
+        effect.className = 'hit-effect';
+        effect.style.left = (canvas.width/2 - 50) + 'px';
+        effect.style.top = (canvas.height/2 - 50) + 'px';
+        document.querySelector('.game-container').appendChild(effect);
+        
+        // Animate effect
+        effect.style.opacity = '1';
+        effect.style.transform = 'scale(1)';
+        setTimeout(() => {
+          effect.style.opacity = '0';
+          effect.style.transform = 'scale(2)';
+          setTimeout(() => effect.remove(), 300);
+        }, 100);
+      }
+    });
+
+    socket.on("died", () => {
+      console.log("You died!");
+      // Reset repair cooldown on death
+      if (repairCooldownTimer) {
+        clearInterval(repairCooldownTimer);
+        canRepair = true;
+        cooldownIndicator.style.display = 'none';
+      }
+    });
+
+    socket.on("respawned", () => {
+      console.log("You respawned!");
+    });
+
+    socket.on("repaired", (data) => {
+      console.log("Repaired! HP:", data.hp);
+    });
+
+    function updateLeaderboard() {
+      const sortedPlayers = Object.values(players)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 8);
+     
+      const leaderboard = document.getElementById("leaderboard");
+      leaderboard.innerHTML = '<div class="leaderboard-title">🏆 TOP PLAYERS</div>';
+     
+      sortedPlayers.forEach((player, index) => {
+        const entry = document.createElement("div");
+        entry.className = "player-entry";
+        const status = player.hp > 0 ? '🟢' : '🔴';
+        entry.innerHTML = `
+          <span class="player-name">${status} ${index + 1}. ${player.name || "Player"}</span>
+          <span class="player-score">${player.score || 0}</span>
+        `;
+        leaderboard.appendChild(entry);
+      });
+    }
+
+    // Boundary collision detection
+    function checkBoundaries(x, y) {
+      const minX = TANK_RADIUS;
+      const maxX = ARENA_WIDTH - TANK_RADIUS;
+      const minY = TANK_RADIUS;
+      const maxY = ARENA_HEIGHT - TANK_RADIUS;
+      
+      return {
+        x: Math.max(minX, Math.min(maxX, x)),
+        y: Math.max(minY, Math.min(maxY, y))
+      };
+    }
+
+    function update() {
+      if (!myPlayerId || !players[myPlayerId]) return;
+      
+      let dx = 0, dy = 0;
+      const boost = keys["space"] ? 1.8 : 1;
+      
+      if (keys["keyw"]) dy -= 1;
+      if (keys["keys"]) dy += 1;
+      if (keys["keya"]) dx -= 1;
+      if (keys["keyd"]) dx += 1;
+      
+      // Normalize diagonal movement
+      if (dx !== 0 && dy !== 0) {
+        dx *= 0.707;
+        dy *= 0.707;
+      }
+      
+      if (dx !== 0 || dy !== 0) {
+        // Send velocity-based movement to server
+        socket.emit("move", { 
+          dx: dx * boost,
+          dy: dy * boost,
+          boost: boost > 1
+        });
+        
+        // Update angle for local rendering
+        angle = Math.atan2(dy, dx);
+      }
+    }
+
+    function drawTank(x, y, angle, hp, score, name, isMe = false) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+
+      // Tank tracks
+      ctx.fillStyle = "#333";
+      ctx.fillRect(-18, -12, 36, 24);
+     
+      // Tank body glow
+      ctx.shadowColor = isMe ? "#00ff88" : "#ff4444";
+      ctx.shadowBlur = hp > 50 ? 20 : 30;
+     
+      // Tank body with damage effect
+      const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 20);
+      if (hp > 70) {
+        gradient.addColorStop(0, isMe ? "#00ff88" : "#444");
+        gradient.addColorStop(1, isMe ? "#00aa55" : "#222");
+      } else if (hp > 40) {
+        gradient.addColorStop(0, isMe ? "#ff8800" : "#664400");
+        gradient.addColorStop(1, isMe ? "#aa5500" : "#442200");
+      } else {
+        gradient.addColorStop(0, isMe ? "#ff0000" : "#660000");
+        gradient.addColorStop(1, isMe ? "#aa0000" : "#440000");
+      }
+      
+      ctx.fillStyle = gradient;
+      ctx.fillRect(-15, -10, 30, 20);
+
+      // Tank turret
+      ctx.fillStyle = isMe ? "#00ccff" : "#555";
+      ctx.fillRect(-8, -6, 16, 12);
+     
+      // Cannon
+      ctx.fillStyle = "#666";
+      ctx.fillRect(8, -3, 20, 6);
+     
+      ctx.restore();
+      ctx.shadowBlur = 0;
+
+      // Health bar
+      ctx.fillStyle = "rgba(0,0,0,0.7)";
+      ctx.fillRect(x - 20, y - 35, 40, 6);
+      
+      // Health color based on percentage
+      let healthColor;
+      if (hp > 70) healthColor = "#00ff00";
+      else if (hp > 40) healthColor = "#ffff00";
+      else healthColor = "#ff0000";
+      
+      ctx.fillStyle = healthColor;
+      ctx.fillRect(x - 20, y - 35, (hp/100) * 40, 6);
+      
+      // Health text
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 10px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(`${Math.round(hp)}%`, x, y - 30);
+
+      // Name and score
+      ctx.fillStyle = isMe ? "#00ff88" : "#fff";
+      ctx.font = "bold 14px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(`${name || "Player"}: ${score || 0}`, x, y + 40);
+    }
+
+    function drawArenaBoundaries() {
+      // Draw arena boundary
+      ctx.strokeStyle = "#00ff88";
+      ctx.lineWidth = 3;
+      ctx.setLineDash([10, 5]);
+      ctx.strokeRect(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
+      ctx.setLineDash([]);
+      
+      // Draw warning zone near boundaries
+      const warningZone = 50;
+      ctx.strokeStyle = "rgba(255, 0, 0, 0.3)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(warningZone, warningZone, 
+                     ARENA_WIDTH - 2*warningZone, 
+                     ARENA_HEIGHT - 2*warningZone);
+    }
+
+    function draw() {
+      // Clear with gradient background
+      const gradient = ctx.createRadialGradient(
+        canvas.width/2, canvas.height/2, 0,
+        canvas.width/2, canvas.height/2, 
+        Math.max(canvas.width, canvas.height)
+      );
+      gradient.addColorStop(0, "#2a2a4a");
+      gradient.addColorStop(1, "#0a0a1a");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw arena boundaries
+      drawArenaBoundaries();
+
+      // Draw ground pattern (reduced density to improve performance)
+      ctx.strokeStyle = "rgba(255,255,255,0.03)";
+      ctx.lineWidth = 1;
+      // step increased from 50 -> 80 to reduce draw work when targeting higher FPS
+      for (let x = 0; x < canvas.width; x += 80) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += 80) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      // Draw bullets with trail effect
+      bullets.forEach(b => {
+        // Bullet trail
+        ctx.beginPath();
+        ctx.moveTo(b.x - (b.vx || 0) * 2, b.y - (b.vy || 0) * 2);
+        ctx.lineTo(b.x, b.y);
+        ctx.strokeStyle = "rgba(255, 255, 100, 0.5)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // Bullet core
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.fillStyle = "#ffff44";
+        ctx.shadowColor = "#ffff00";
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.arc(0, 0, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // Draw players
+      Object.entries(players).forEach(([id, player]) => {
+        if (player.x && player.y) {
+          drawTank(
+            player.x,
+            player.y,
+            player.angle || 0,
+            player.hp || 100,
+            player.score || 0,
+            player.name || "Player",
+            id === myPlayerId
+          );
+        }
+      });
+
+      // FPS counter: updated each render
+      frameCount++;
+      const now = performance.now();
+      if (now - lastTime >= 1000) {
+        fps = Math.round(frameCount * 1000 / (now - lastTime));
+        frameCount = 0;
+        lastTime = now;
+        document.getElementById("fps").textContent = fps;
+      }
+    }
+
+    function drawMinimap() {
+      minimapCtx.clearRect(0, 0, 130, 130);
+      
+      // Draw minimap background
+      minimapCtx.fillStyle = "rgba(20,20,40,0.8)";
+      minimapCtx.fillRect(0, 0, 130, 130);
+      
+      // Draw arena boundaries on minimap
+      minimapCtx.strokeStyle = "#00ff88";
+      minimapCtx.lineWidth = 2;
+      minimapCtx.strokeRect(5, 5, 120, 120);
+
+      // Draw players on minimap
+      Object.values(players).forEach(p => {
+        if (p.x && p.y) {
+          const miniX = (p.x / ARENA_WIDTH) * 120 + 5;
+          const miniY = (p.y / ARENA_HEIGHT) * 120 + 5;
+          
+          minimapCtx.fillStyle = p.id === myPlayerId ? "#00ff88" : "#ff4444";
+          minimapCtx.beginPath();
+          minimapCtx.arc(miniX, miniY, p.id === myPlayerId ? 3 : 2, 0, Math.PI * 2);
+          minimapCtx.fill();
+        }
+      });
+
+      // Draw bullets on minimap
+      bullets.forEach(b => {
+        const miniX = (b.x / ARENA_WIDTH) * 120 + 5;
+        const miniY = (b.y / ARENA_HEIGHT) * 120 + 5;
+        
+        minimapCtx.fillStyle = "#ffff44";
+        minimapCtx.beginPath();
+        minimapCtx.arc(miniX, miniY, 1, 0, Math.PI * 2);
+        minimapCtx.fill();
+      });
+    }
+
+    // Custom game loop that tries to meet TARGET_FPS
+    let accumulator = 0;
+    let previous = performance.now();
+
+    function loop(now) {
+      // now is provided by rAF; but we allow logic/draw to run at a target rate.
+      const delta = now - previous;
+      previous = now;
+      accumulator += delta;
+
+      // If TARGET_FPS is higher than actual rAF (monitor refresh), this cannot force the display to show more frames,
+      // but it will allow logic to attempt to run more frequently if rAF provides time slices.
+      // Run as many fixed-interval steps as needed but cap to prevent spiral of death.
+      const maxSteps = 3;
+      let steps = 0;
+      while (accumulator >= FRAME_INTERVAL && steps < maxSteps) {
+        update();
+        accumulator -= FRAME_INTERVAL;
+        steps++;
+      }
+
+      // Always draw once per rAF for smooth rendering, but you can also decide to draw only if a logic step ran.
+      draw();
+      drawMinimap();
+
+      requestAnimationFrame(loop);
+    }
+
+    // Start loop
+    requestAnimationFrame((ts) => {
+      // initialize timing anchors
+      previous = ts;
+      lastTime = performance.now();
+      frameCount = 0;
+      requestAnimationFrame(loop);
+    });
+  </script>
+</body>
+</html>
