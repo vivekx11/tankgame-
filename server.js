@@ -1,3 +1,18 @@
+// ============================================================================
+// Advanced Tank Battle Arena - Multiplayer Game Server
+// ============================================================================
+// Description: Real-time multiplayer tank battle game using Node.js & Socket.io
+// Technologies: Express.js, Socket.io, Canvas Physics Engine
+// Features: Player movement, shooting, collision detection, health system,
+//          real-time updates, respawn mechanics
+// Author: Team Suno Shizume
+// License: ISC
+// Last Updated: 2024
+// ============================================================================
+
+// ============================================================================
+// IMPORTS - Required modules for the game server
+// ============================================================================
 
 const express = require("express");
 const http = require("http");
@@ -10,6 +25,16 @@ const io = new Server(server);
 app.use(express.static("public"));
 
 // Game Constants
+// ============================================================================
+// GAME CONFIGURATION - All game balance and physics settings
+// ============================================================================
+// Arena Dimensions: Define the playing field size
+// Tank Properties: Size, speed, rotation, health
+// Bullet Properties: Speed, damage, lifetime, collision radius
+// Game Balance: Health values, respawn times, repair mechanics, cooldowns
+// Physics: Friction for realistic movement, rotation speed for tank turning
+// ============================================================================
+
 const GAME_CONFIG = {
   ARENA_WIDTH: 1200,
   ARENA_HEIGHT: 700,
@@ -33,6 +58,25 @@ const GAME_CONFIG = {
 const players = {};
 const bullets = [];
 const lastRepairTime = {};
+
+// ============================================================================
+// PLAYER CLASS - Represents a single player tank in the game arena
+// ============================================================================
+// Properties:
+//   Position & Movement: x, y coordinates, velocity (vx, vy), speed control
+//   Rotation: angle (current rotation), targetAngle (desired rotation)
+//   Health System: hp (current health), maxHP, isAlive status
+//   Shooting: lastShot (timestamp), shootCooldown (rate limiting)
+//   Respawn: respawnTime (countdown timer)
+//   Scoring: score tracking for game statistics
+//   Repair System: lastRepairTime tracking to prevent abuse
+// Methods:
+//   move() - Apply physics, friction, and movement to tank
+//   shoot() - Create bullet when conditions are met
+//   takeDamage() - Reduce health on bullet impact
+//   repair() - Heal tank with cooldown protection
+//   toJSON() - Serialize for network transmission
+// ============================================================================
 
 // Physics-based Player class
 class Player {
